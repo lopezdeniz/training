@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>iWorkout</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme:light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme:dark)">
+  <link rel="icon" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #F2F2F7;
+      --surface: #FFFFFF;
+      --txt: #000000;
+      --muted: #8E8E93;
+      --accent: #007AFF;
+      --success: #34C759;
+      --danger: #FF3B30;
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    [data-theme="dark"] {
+      --bg: #000000;
+      --surface: #1C1C1E;
+      --txt: #FFFFFF;
+      --muted: #EBEBF5;
+      --accent: #0A84FF;
+      --success: #30D158;
+      --danger: #FF453A;
+      --shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      height: 100vh; height: 100dvh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      user-select: none; -webkit-user-select: none;
+      transition: background 0.3s, color 0.3s;
+    }
+    .app-header {
+      padding: 12px 20px 4px;
+      font-size: 26px; font-weight: 800; letter-spacing: -0.5px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .segmented-control {
+      display: flex;
+      background: var(--surface);
+      margin: 6px 16px 4px;
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      box-shadow: var(--shadow);
+      flex-shrink: 0;
+    }
+    .segment {
+      flex: 1; text-align: center; padding: 7px 0; font-size: 13px; font-weight: 600;
+      border-radius: 10px; cursor: pointer; transition: 0.2s; color: var(--txt);
+    }
+    .segment.active {
+      background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(0,122,255,0.3);
+    }
+    .days-scroll {
+      display: flex; overflow-x: auto; padding: 6px 16px 2px; gap: 8px;
+      flex-shrink: 0; scrollbar-width: none; justify-content: center;
+    }
+    .days-scroll::-webkit-scrollbar { display: none; }
+    .day-pill {
+      padding: 5px 14px; border-radius: 18px; font-weight: 600; font-size: 13px;
+      white-space: nowrap; background: var(--surface); color: var(--txt);
+      box-shadow: var(--shadow); cursor: pointer; transition: 0.2s;
+      text-align: center;
+    }
+    .day-pill.active { background: var(--txt); color: var(--bg); box-shadow: none; }
+    .day-pill.completed { background: rgba(52,199,89,0.12); color: var(--success); }
+    .day-pill.completed.active { background: var(--success); color: #fff; }
+    .container {
+      flex: 1; margin: 8px 12px 0; position: relative; overflow: hidden;
+    }
+    .view {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; flex-direction: column; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .view.active { opacity: 1; pointer-events: auto; }
+    .scroll-area {
+      flex: 1; overflow-y: auto; padding-bottom: 12px;
+    }
+    .card {
+      background: var(--surface); border-radius: var(--radius-lg); padding: 14px;
+      margin-bottom: 10px; box-shadow: var(--shadow); text-align: center;
+    }
+    .card-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .sets-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 8px; justify-items: center;
+    }
+    .set-btn {
+      width: 60px; height: 60px; border-radius: 16px; background: var(--bg);
+      border: none; color: var(--txt); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: 0.2s; font-weight: 600; box-shadow: var(--shadow);
+    }
+    .set-btn:active { transform: scale(0.92); }
+    .set-btn.done { background: var(--success); color: #fff; }
+    .set-reps { font-size: 20px; line-height: 1; }
+    .set-weight { font-size: 11px; opacity: 0.8; }
+    .check-mark { font-size: 14px; margin-top: 2px; }
+    .btn {
+      width: 100%; padding: 13px; border-radius: var(--radius-md); font-size: 16px;
+      font-weight: 600; border: none; cursor: pointer; transition: 0.2s;
+      margin-bottom: 8px; color: #fff; text-align: center;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: rgba(255,59,48,0.1); color: var(--danger); }
+    .btn-secondary { background: var(--surface); color: var(--txt); box-shadow: var(--shadow); }
+    .btn-small { padding: 8px; font-size: 13px; border-radius: 12px; width: auto; display: inline-block; }
+    .footer-actions { margin-top: auto; padding-top: 8px; }
+    .timer-panel {
+      position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+      background: var(--surface); border-top-left-radius: 24px; border-top-right-radius: 24px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.1); transform: translateY(110%);
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); z-index: 100; text-align: center;
+    }
+    .timer-panel.active { transform: translateY(0); }
+    .timer-controls { display: flex; gap: 10px; margin-top: 8px; justify-content: center; }
+    .timer-controls button { flex: 1; }
+    .icon-btn { background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px; }
+    .icon-btn:active { opacity: 0.5; }
+    .icon-btn-accent { color: var(--accent); font-weight: 600; font-size: 13px; }
+    .empty-state { text-align: center; padding: 30px; color: var(--muted); }
+    input, select {
+      width: 100%; padding: 10px; border-radius: var(--radius-sm); border: none;
+      background: var(--bg); color: var(--txt); font-size: 15px; text-align: center;
+      font-family: inherit; outline: none; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 6px;
+    }
+    .setup-row { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
+    .setup-row input { flex: 1; text-align: center; }
+    .setup-row .set-num { width: 28px; text-align: center; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="app-header" id="main-title">Тренировка</div>
+  <div class="segmented-control">
+    <div class="segment active" onclick="switchTab('workout',this)">Тренировка</div>
+    <div class="segment" onclick="switchTab('setup',this)">Программа</div>
+    <div class="segment" onclick="switchTab('settings',this)">Настройки</div>
+  </div>
+  <div class="days-scroll" id="days-nav"></div>
+  <div class="container">
+    <div class="view active" id="view-workout">
+      <div class="scroll-area" id="workout-list"></div>
+    </div>
+    <div class="view" id="view-setup">
+      <div class="scroll-area" id="setup-list"></div>
+    </div>
+    <div class="view" id="view-settings">
+      <div class="scroll-area" id="settings-list"></div>
+    </div>
+  </div>
+  <div class="timer-panel" id="timer-panel">
+    <div style="font-size:12px;color:var(--muted);">Отдых</div>
+    <div style="font-size:42px;font-weight:800;margin:4px 0;" id="timer-display">00:00</div>
+    <div class="timer-controls">
+      <button class="btn btn-secondary btn-small" onclick="adjustTimer(-30)">-30</button>
+      <button class="btn btn-secondary btn-small" onclick="stopTimer()">Стоп</button>
+      <button class="btn btn-secondary btn-small" onclick="adjustTimer(30)">+30</button>
+    </div>
+  </div>
+  <script>
+    const STORAGE = 'iWorkout_v2';
+    let db = JSON.parse(localStorage.getItem(STORAGE)) || {
+      theme: 'light', currentDayId: 0, progress: {}, completedDays: {},
+      days: [{name:'День 1', exercises:[]}], settings: {reps:'12',weight:0,rest:1},
+      history: [], expanded: {}
+    };
+    db.completedDays = db.completedDays || {};
+    db.settings = db.settings || {reps:'12',weight:0,rest:1};
+    db.history = db.history || [];
+    db.expanded = db.expanded || {};
+    let activeTab = 'workout', timerInterval, timerSeconds = 0;
+
+    function applyTheme() {
+      document.body.setAttribute('data-theme', db.theme);
+      const sel = document.getElementById('theme-select');
+      if (sel) sel.value = db.theme;
+    }
+    function playBeep() {
+      try {
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        for(let i=0;i<3;i++){ let o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(880,ctx.currentTime+i); g.gain.setValueAtTime(0.2,ctx.currentTime+i); g.gain.exponentialRampToValueAtTime(0.00001,ctx.currentTime+i+0.8); o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime+i); o.stop(ctx.currentTime+i+0.8); }
+      }catch(e){}
+    }
+    function init() { applyTheme(); renderAll(); }
+    function save() { localStorage.setItem(STORAGE, JSON.stringify(db)); }
+    function switchTab(tab, el) {
+      activeTab = tab;
+      document.querySelectorAll('.segment').forEach(s=>s.classList.remove('active'));
+      if(el) el.classList.add('active');
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      document.getElementById(`view-${tab}`).classList.add('active');
+      document.getElementById('main-title').innerText = tab==='workout'?'Тренировка':(tab==='setup'?'Программа':'Настройки');
+      renderView();
+    }
+    function selectDay(i) { db.currentDayId=i; save(); renderAll(); }
+    function renderAll() { renderDaysNav(); renderView(); }
+    function renderDaysNav() {
+      const nav = document.getElementById('days-nav');
+      if(!db.days.length){ nav.innerHTML=''; return; }
+      nav.innerHTML = db.days.map((d,i)=>`<div class="day-pill ${i===db.currentDayId?'active':''} ${db.completedDays[i]?'completed':''}" onclick="selectDay(${i})">${d.name}${db.completedDays[i]?' ✓':''}</div>`).join('');
+    }
+    function renderView() {
+      if(activeTab==='workout') renderWorkout();
+      else if(activeTab==='setup') renderSetup();
+      else renderSettings();
+    }
+    function renderWorkout() {
+      const list = document.getElementById('workout-list');
+      const day = db.days[db.currentDayId];
+      if(!day || !day.exercises.length) {
+        list.innerHTML = `<div class="empty-state"><p>Нет упражнений. Создайте в Программе.</p></div>`;
+        return;
+      }
+      let html = '';
+      day.exercises.forEach((ex,ei)=>{
+        const keyPrefix = `${db.currentDayId}_${ei}`;
+        const allDone = ex.sets.every((s,si)=>db.progress[`${keyPrefix}_${si}`]);
+        const expanded = db.expanded[ei]!==undefined ? db.expanded[ei] : !allDone;
+        html += `<div class="card" style="text-align:center;">
+          <div onclick="toggleExercise(${ei})" style="cursor:pointer;display:flex;justify-content:center;align-items:center;gap:8px;">
+            <span style="font-size:18px;font-weight:700;">${ex.name||'Упражнение '+(ei+1)}</span>
+            <span style="transition:0.2s;transform:${expanded?'rotate(180deg)':'rotate(0)'}">▾</span>
+          </div>
+          <div style="max-height:${expanded?'300px':'0'};overflow:hidden;transition:max-height 0.3s ease;margin-top:${expanded?'10px':'0'};">
+            <div class="sets-grid">`;
+              ex.sets.forEach((s,si)=>{
+                const done = db.progress[`${keyPrefix}_${si}`];
+                html += `<button class="set-btn ${done?'done':''}" onclick="toggleSet(${ei},${si},${s.rest})">
+                  <span class="set-reps">${s.reps}</span>
+                  <span class="set-weight">${s.weight>0?s.weight+'кг':'раз'}</span>
+                  ${done?'<span class="check-mark">✓</span>':''}
+                </button>`;
+              });
+            html += `</div></div></div>`;
+      });
+      html += `<div class="footer-actions">
+        <button class="btn btn-success" onclick="finishWorkout()">${db.completedDays[db.currentDayId]?'Следующий день →':'Завершить день'}</button>
+        <button class="btn btn-secondary" onclick="restartDay()">↺ Заново</button>
+      </div>`;
+      list.innerHTML = html;
+    }
+    function toggleExercise(ei) { db.expanded[ei]=!db.expanded[ei]; save(); renderWorkout(); }
+    function toggleSet(ei,si,rest) {
+      const key = `${db.currentDayId}_${ei}_${si}`;
+      if(db.progress[key]) delete db.progress[key];
+      else { db.progress[key]=true; if(rest>0) startTimer(rest*60); }
+      save(); renderWorkout();
+    }
+    function finishWorkout() {
+      const day = db.days[db.currentDayId];
+      const allDone = day.exercises.every((ex,ei)=>ex.sets.every((s,si)=>db.progress[`${db.currentDayId}_${ei}_${si}`]));
+      if(!allDone){ alert('Выполните все подходы.'); return; }
+      db.completedDays[db.currentDayId] = true;
+      db.history.unshift({date:new Date().toISOString(), dayIndex:db.currentDayId, dayName:day.name});
+      if(db.history.length>50) db.history.length=50;
+      if(db.days.length>1) db.currentDayId = (db.currentDayId+1)%db.days.length;
+      save(); renderAll();
+    }
+    function restartDay() {
+      if(confirm('Сбросить прогресс дня?')) {
+        db.completedDays[db.currentDayId]=false;
+        Object.keys(db.progress).forEach(k=>{ if(k.startsWith(db.currentDayId+'_')) delete db.progress[k]; });
+        save(); renderAll();
+      }
+    }
+    function renderSetup() {
+      const list = document.getElementById('setup-list');
+      const day = db.days[db.currentDayId];
+      if(!day){ list.innerHTML=`<button class="btn btn-primary" onclick="addDay()">+ Новый день</button>`; return; }
+      let html = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+        <button class="icon-btn icon-btn-accent" onclick="copyDay()">Копировать</button>
+        <button class="icon-btn icon-btn-accent" onclick="addDay()">+ День</button>
+      </div>
+      <input id="day-name" value="${day.name}" onchange="updateDayName(this.value)" style="font-size:20px;font-weight:700;background:transparent;box-shadow:none;text-align:center;">`;
+      day.exercises.forEach((ex,ei)=>{
+        html += `<div class="card"><div style="display:flex;gap:6px;margin-bottom:4px;">
+          <input value="${ex.name}" onchange="updateExName(${ei},this.value)" placeholder="Название">
+          <button class="icon-btn" onclick="deleteExercise(${ei})">✕</button>
+        </div>`;
+        ex.sets.forEach((s,si)=>{
+          html += `<div class="setup-row">
+            <span class="set-num">${si+1}</span>
+            <input value="${s.reps}" onchange="updateSet(${ei},${si},'reps',this.value)">
+            <input type="number" value="${s.weight}" onchange="updateSet(${ei},${si},'weight',this.value)">
+            <input type="number" step="0.5" value="${s.rest}" onchange="updateSet(${ei},${si},'rest',this.value)">
+            <button class="icon-btn" onclick="deleteSet(${ei},${si})">✕</button>
+          </div>`;
+        });
+        html += `<button class="btn btn-secondary btn-small" onclick="addSet(${ei})">+ Подход</button></div>`;
+      });
+      html += `<button class="btn btn-secondary" onclick="addExercise()">+ Упражнение</button>
+      <button class="btn btn-success" onclick="saveAndExit()">💾 Сохранить и тренироваться</button>
+      <button class="btn btn-danger" onclick="deleteCurrentDay()">Удалить день</button>`;
+      list.innerHTML = html;
+    }
+    function saveAndExit() {
+      const inp = document.getElementById('day-name');
+      if(inp) updateDayName(inp.value);
+      switchTab('workout');
+    }
+    function updateDayName(v) { db.days[db.currentDayId].name=v||'Без названия'; save(); renderDaysNav(); }
+    function updateExName(ei,v) { db.days[db.currentDayId].exercises[ei].name=v; save(); }
+    function updateSet(ei,si,f,v) { db.days[db.currentDayId].exercises[ei].sets[si][f]=f==='reps'?v:(parseFloat(v)||0); save(); }
+    function addExercise() {
+      const s=db.settings;
+      db.days[db.currentDayId].exercises.push({name:'',sets:[{reps:s.reps,weight:s.weight,rest:s.rest}]});
+      save(); renderSetup();
+    }
+    function deleteExercise(ei) { if(confirm('Удалить?')){db.days[db.currentDayId].exercises.splice(ei,1); save(); renderSetup();} }
+    function addSet(ei) {
+      const ex=db.days[db.currentDayId].exercises[ei];
+      const last=ex.sets.length?{...ex.sets[ex.sets.length-1]}:{reps:db.settings.reps,weight:db.settings.weight,rest:db.settings.rest};
+      ex.sets.push(last); save(); renderSetup();
+    }
+    function deleteSet(ei,si) { db.days[db.currentDayId].exercises[ei].sets.splice(si,1); save(); renderSetup(); }
+    function addDay() { db.days.push({name:`День ${db.days.length+1}`,exercises:[]}); db.currentDayId=db.days.length-1; save(); renderAll(); }
+    function deleteCurrentDay() { if(confirm('Удалить день?')){db.days.splice(db.currentDayId,1); delete db.completedDays[db.currentDayId]; db.currentDayId=db.days.length?0:0; save(); renderAll();} }
+    function copyDay() {
+      if(!db.days.length) return;
+      const c=JSON.parse(JSON.stringify(db.days[db.currentDayId])); c.name+=' (копия)';
+      db.days.push(c); db.currentDayId=db.days.length-1; save(); renderAll();
+    }
+    function renderSettings() {
+      const list = document.getElementById('settings-list');
+      list.innerHTML = `
+      <div class="card">
+        <h4 style="margin-bottom:8px;">Тема</h4>
+        <select id="theme-select" onchange="changeTheme(this.value)">
+          <option value="light" ${db.theme==='light'?'selected':''}>Светлая</option>
+          <option value="dark" ${db.theme==='dark'?'selected':''}>Тёмная</option>
+        </select>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px;">Умолчания подхода</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <div><label>Повт</label><input id="def-reps" value="${db.settings.reps}" onchange="updateSetting('reps',this.value)"></div>
+          <div><label>Вес</label><input type="number" id="def-weight" value="${db.settings.weight}" onchange="updateSetting('weight',this.value)"></div>
+          <div><label>Мин</label><input type="number" step="0.5" id="def-rest" value="${db.settings.rest}" onchange="updateSetting('rest',this.value)"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:6px;">История</h4>
+        ${db.history.length?db.history.slice(0,5).map(h=>`<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:2px;"><span>${h.dayName}</span><span>${new Date(h.date).toLocaleDateString()}</span></div>`).join(''):'<p>Нет завершённых тренировок</p>'}
+      </div>
+      <button class="btn btn-danger" onclick="hardReset()">Сбросить всё</button>`;
+    }
+    function changeTheme(t) { db.theme=t; applyTheme(); save(); }
+    function updateSetting(k,v) { if(k==='weight'||k==='rest') v=parseFloat(v)||0; db.settings[k]=v; save(); }
+    function startTimer(sec) {
+      stopTimer(); timerSeconds=sec;
+      document.getElementById('timer-panel').classList.add('active');
+      updateTimerDisplay();
+      timerInterval = setInterval(()=>{
+        timerSeconds--; updateTimerDisplay();
+        if(timerSeconds<=0){ stopTimer(); playBeep(); if(navigator.vibrate) navigator.vibrate([400,600,400,600,400]); }
+      },1000);
+    }
+    function updateTimerDisplay() {
+      const m=Math.floor(timerSeconds/60), s=timerSeconds%60;
+      document.getElementById('timer-display').innerText = `${m<10?'0':''}${m}:${s<10?'0':''}${s}`;
+    }
+    function adjustTimer(d) { timerSeconds=Math.max(0,timerSeconds+d); updateTimerDisplay(); }
+    function stopTimer() { clearInterval(timerInterval); document.getElementById('timer-panel').classList.remove('active'); }
+    function hardReset() { if(confirm('Точно сбросить всё?')){ localStorage.removeItem(STORAGE); location.reload(); } }
+
+    let touchStartX=0;
+    document.addEventListener('touchstart', e=>{ if(e.target.closest('.days-scroll,.card,button,input,select')) return; touchStartX=e.touches[0].clientX; });
+    document.addEventListener('touchend', e=>{
+      if(!touchStartX) return;
+      const diff = e.changedTouches[0].clientX - touchStartX;
+      if(Math.abs(diff)>50 && activeTab==='workout' && db.days.length>1){
+        if(diff>0) db.currentDayId = (db.currentDayId-1+db.days.length)%db.days.length;
+        else db.currentDayId = (db.currentDayId+1)%db.days.length;
+        save(); renderAll();
+      }
+      touchStartX=0;
+    });
+    init();
+  </script>
+</body>
+</html>
